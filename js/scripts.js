@@ -2,16 +2,24 @@
 
 Settings = {
 	red : {
-		start : 2
+		start : 2,
+		end : 5,
+		fill : "red"
 	},
 	blue : {
-		start : 9
+		start : 9,
+		end : 12,
+		fill : "blue"
 	},
 	green : {
-		start : 16
+		start : 16,
+		end : 19,
+		fill : "green"
 	},
 	yellow : {
-		start : 24
+		start : 24,
+		end : 27,
+		fill : "yellow"
 	}
 }
 
@@ -81,7 +89,6 @@ var colorBoard = function(first,last,color){
 }
 
 for (i = 0; i < pegNum; i++) {
-	var pos = i+1;
 	pegSpots[i] = new Kinetic.Circle({
 		x: (diceCircle.getX() + (stage.width()/2.5) * Math.cos(2 * Math.PI * i / pegNum))+stage.width()/2,
 		y: (diceCircle.getY() + (stage.height()/2.5) * Math.sin(2 * Math.PI * i / pegNum))+stage.height()/2,
@@ -96,9 +103,6 @@ for (i = 0; i < pegNum; i++) {
 	colorBoard(17,20,"green");
 	colorBoard(24,27,"yellow");*/
 
-	// Add position number to each peg spot
-	pegSpots[i].position = pos;
-
 	//add pegSpots to board layer
 	board.add(pegSpots[i]);
 }
@@ -108,23 +112,40 @@ stage.add(board);
 
 // #### Pegs
 
+var pegArray = [];
 var pegs = new Kinetic.Layer();
 
-redStart = Settings.red.start;
+var createPegs = function(color){
+	pegArray[color] = new Kinetic.Group();
+	var peg = pegArray[color];
 
-var peg = new Kinetic.Circle({
-	x: pegSpots[redStart].getX(),
-	y: pegSpots[redStart].getY(),
-	radius: pegSpots[redStart].radius(),
-	fill: 'red',
-	stroke: 'black',
-	strokeWidth: 2
-});
+	for (i = 0; i < 4; i++) {
 
-//add current position to peg obj
-peg.pos = redStart;
+		var start = (Settings[color].start)+i;
 
-pegs.add(peg);
+		pegArray[color][i] = new Kinetic.Circle({
+			x: pegSpots[start].getX(),
+			y: pegSpots[start].getY(),
+			radius: pegSpots[start].radius(),
+			fill: color,
+			stroke: 'black',
+			strokeWidth: 2
+		});
+
+		//add current position to peg obj
+		peg[i].pos = start;
+
+		peg.add(peg[i]);
+
+	}
+
+	pegs.add(peg);
+}
+
+createPegs("red");
+createPegs("blue");
+createPegs("green");
+createPegs("yellow");
 
 stage.add(pegs);
 
@@ -143,12 +164,14 @@ diceCircle.on('click', function() {
 
 
 //move peg to number of the dice roll when clicked
-peg.on('click', function(){
-	var newPos = parseInt(diceText.text()) + peg.pos;
-	peg.x(pegSpots[newPos].getX());
-	peg.y(pegSpots[newPos].getY());
+pegs.on('click', function(e){
+	// use e.target to get child peg of pegs layer that was clicked
+	var newPos = parseInt(diceText.text()) + e.target.pos;
+	console.log(e.target);
+	e.target.x(pegSpots[newPos].getX());
+	e.target.y(pegSpots[newPos].getY());
 	//make sure to update peg position
-	peg.pos = newPos;
+	e.target.pos = newPos;
 	//redraw entire stage to clear board of old peg positions
 	stage.draw();
 });
