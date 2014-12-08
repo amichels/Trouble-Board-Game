@@ -6,6 +6,8 @@ var stage = new Kinetic.Stage({
 	strokeWidth: 1
 });
 
+
+// ##### DICE
 var dice = new Kinetic.Layer({
 	x: stage.width()/2,
     y: stage.height()/2,
@@ -51,3 +53,47 @@ diceCircle.on('click', function() {
 	dice.draw();
 	console.log("click");
 });
+
+
+// #### board
+
+var board = new Kinetic.Layer({
+    width:stage.width(),
+    height:stage.height()
+});
+
+//create array for pegSpots
+var pegSpots = [];
+pegNum = 28;
+
+//function that colors peg spots based on peg spot position
+var colorBoard = function(first,last,color){
+	if(pos >= first && pos <= last){
+		pegSpots[i].fill(color);
+		pegSpots[i].position = pos;
+		pegSpots[i].team = color;
+	}
+}
+
+for (i = 0; i < pegNum; i++) {
+	var pos = i+1;
+	pegSpots[i] = new Kinetic.Circle({
+		x: (diceCircle.getX() + (stage.width()/2.5) * Math.cos(2 * Math.PI * i / pegNum))+stage.width()/2,
+		y: (diceCircle.getY() + (stage.height()/2.5) * Math.sin(2 * Math.PI * i / pegNum))+stage.height()/2,
+		radius: 25,
+		fill: 'transparent',
+		stroke: 'black',
+		strokeWidth: 1
+	});
+
+	colorBoard(3,6,"red");
+	colorBoard(10,13,"blue");
+	colorBoard(17,20,"green");
+	colorBoard(24,27,"yellow");
+
+	//add pegSpots to board layer
+	board.add(pegSpots[i]);
+}
+
+// add the board to the stage
+stage.add(board);
