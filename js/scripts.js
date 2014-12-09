@@ -10,6 +10,13 @@ var objValMatch = function(obj,prop,value){
 	}
 }
 
+var updatePos = function(peg,pos){
+	peg.x(pegSpots[pos].getX());
+	peg.y(pegSpots[pos].getY());
+	//make sure to update peg position
+	peg.pos = pos;
+}
+
 
 // #### Game Settings
 
@@ -162,6 +169,9 @@ var createPegs = function(color,x,y){
 	peg[i].color = color;
 	// Status that says whether the peg is on the board or off (in it's zone)
 	peg[i].status = "off";
+	// save orginal coordinates
+	peg[i].orgX = peg[i].x();
+	peg[i].orgY = peg[i].y();
 
 	peg.add(peg[i]);
 	pegs.add(peg);
@@ -179,6 +189,7 @@ var createZones = function(color){
 				y: (diceCircle.getY() + (stage.height()/2) * Math.sin(2 * Math.PI * i / pegNum))+stage.height()/2,
 				radius: 25,
 				fill: color,
+				opacity: .5,
 				stroke: 'black',
 				strokeWidth: 1
 			});
@@ -218,29 +229,17 @@ diceCircle.on('click', function() {
 
 	console.log("Click");
 	console.log(diceText.text());
-
-	//change player turn based on player color order in Settings obj
-	var turn = Session.turn;
-	if(turn === objValMatch(Settings,"order",4)){
-		Session.turn = objValMatch(Settings,"order",1);
-	}else{
-		newTurn = Settings[turn].order+1;
-		Session.turn = objValMatch(Settings,"order",newTurn);
-	}
 	
 });
-
-var updatePos = function(peg,pos){
-	peg.x(pegSpots[pos].getX());
-	peg.y(pegSpots[pos].getY());
-	//make sure to update peg position
-	peg.pos = pos;
-}
-
 
 //move peg to number of the dice roll when clicked
 pegs.on('click', function(e){
 	console.log(e.target);
+
+
+
+
+	//check to see if a 6 was rolled, if the peg clicked on is off the board and if it's the correct color's turn
 	if(diceText.text() === "6" && e.target.status === "off" && e.target.color === Session.turn){
 
 		console.log("text: "+diceText.text());
@@ -252,9 +251,20 @@ pegs.on('click', function(e){
 		// since a six was rolle, piece can be in play and status must be changed to on
 		e.target.status = "on";
 	}
+
+	//if the piece is in play and it's the color of the turn
 	else if(e.target.status === "on" && e.target.color === Session.turn){
 		var newPos = parseInt(diceText.text()) + e.target.pos;
 		updatePos(e.target,newPos);
+	}
+
+	//change player turn based on player color order in Settings obj
+	var turn = Session.turn;
+	if(turn === objValMatch(Settings,"order",4)){
+		Session.turn = objValMatch(Settings,"order",1);
+	}else{
+		newTurn = Settings[turn].order+1;
+		Session.turn = objValMatch(Settings,"order",newTurn);
 	}
 
 	//need to change color of turn text
