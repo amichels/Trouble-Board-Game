@@ -1,3 +1,35 @@
+// #### Game Settings
+
+Settings = {
+	pegs : {
+		red : {
+			order: 1,
+			start : 2,
+			end : 5,
+			fill : "red"
+		},
+		blue : {
+			order: 2,
+			start : 9,
+			end : 12,
+			fill : "blue"
+		},
+		green : {
+			order: 3,
+			start : 16,
+			end : 19,
+			fill : "green"
+		},
+		yellow : {
+			order: 4,
+			start : 23,
+			end : 26,
+			fill : "yellow"
+		}
+	},
+	pegZoneNum: 28
+}
+
 // ### Global Functions
 
 var objValMatch = function(obj,prop,value){
@@ -11,44 +43,23 @@ var objValMatch = function(obj,prop,value){
 }
 
 var updatePos = function(peg,pos){
-	peg.x(pegSpots[pos].getX());
-	peg.y(pegSpots[pos].getY());
-	//make sure to update peg position
-	peg.pos = pos;
-}
-
-
-// #### Game Settings
-
-Settings = {
-	red : {
-		order: 1,
-		start : 2,
-		end : 5,
-		fill : "red"
-	},
-	blue : {
-		order: 2,
-		start : 9,
-		end : 12,
-		fill : "blue"
-	},
-	green : {
-		order: 3,
-		start : 16,
-		end : 19,
-		fill : "green"
-	},
-	yellow : {
-		order: 4,
-		start : 23,
-		end : 26,
-		fill : "yellow"
+	//if the peg new position exceeds the number of peg spots, start back at the first peg zone 
+	if(pos >= Settings.pegZoneNum){
+		peg.x(pegSpots[0].getX());
+		peg.y(pegSpots[0].getY());
+		peg.pos = 0;
+	}else{
+		peg.x(pegSpots[pos].getX());
+		peg.y(pegSpots[pos].getY());
+		//make sure to update peg position
+		peg.pos = pos;
 	}
 }
 
+// #### Game Session Info
+
 Session = {
-	turn : objValMatch(Settings,"order",1),
+	turn : objValMatch(Settings.pegs,"order",1),
 }
 
 var stage = new Kinetic.Stage({
@@ -124,8 +135,8 @@ var board = new Kinetic.Layer({
 });
 
 //create array for pegSpots
-var pegSpots = [];
-pegNum = 28;
+var pegSpots = [],
+	pegNum = Settings.pegZoneNum;
 
 for (i = 0; i < pegNum; i++) {
 	pegSpots[i] = new Kinetic.Circle({
@@ -179,8 +190,9 @@ var createPegs = function(color,x,y){
 
 var createZones = function(color){
 	var pegZones = [],
-		start = Settings[color].start,
-		end = Settings[color].end;
+		start = Settings.pegs[color].start,
+		end = Settings.pegs[color].end,
+		pegNum = Settings.pegZoneNum;
 	// NOTE: this loop could probably be joined with the pegSpots loop
 	for (i = 0; i < pegNum; i++) {
 		if(i >= start && i <= end){
@@ -208,11 +220,17 @@ var createZones = function(color){
 	}
 }
 
-// NOTE: call and build these by looping through the Seetings obj
-createZones("red");
-createZones("blue");
-createZones("green");
-createZones("yellow");
+var gameInit = function(){
+	var obj = Settings.pegs;
+	for (var key in obj) {
+		if (obj.hasOwnProperty(key)) {
+			createZones(key);
+		}
+	}
+}
+
+// Start game, build pegs
+gameInit();
 
 //add zones first so pegs will be on top of zone spots
 stage.add(zones);
@@ -236,9 +254,6 @@ diceCircle.on('click', function() {
 pegs.on('click', function(e){
 	console.log(e.target);
 
-
-
-
 	//check to see if a 6 was rolled, if the peg clicked on is off the board and if it's the correct color's turn
 	if(diceText.text() === "6" && e.target.status === "off" && e.target.color === Session.turn){
 
@@ -246,7 +261,7 @@ pegs.on('click', function(e){
 		console.log("Status: "+e.target.status);
 		console.log("color: "+e.target.color);
 
-		var newPos = Settings[Session.turn].start;
+		var newPos = Settings.pegs[Session.turn].start;
 		updatePos(e.target,newPos);
 		// since a six was rolle, piece can be in play and status must be changed to on
 		e.target.status = "on";
@@ -260,11 +275,11 @@ pegs.on('click', function(e){
 
 	//change player turn based on player color order in Settings obj
 	var turn = Session.turn;
-	if(turn === objValMatch(Settings,"order",4)){
-		Session.turn = objValMatch(Settings,"order",1);
+	if(turn === objValMatch(Settings.pegs,"order",4)){
+		Session.turn = objValMatch(Settings.pegs,"order",1);
 	}else{
-		newTurn = Settings[turn].order+1;
-		Session.turn = objValMatch(Settings,"order",newTurn);
+		newTurn = Settings.pegs[turn].order+1;
+		Session.turn = objValMatch(Settings.pegs,"order",newTurn);
 	}
 
 	//need to change color of turn text
