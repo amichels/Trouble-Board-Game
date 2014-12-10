@@ -32,6 +32,7 @@ Settings = {
 
 // ### Global Functions
 
+// Returns the property of an obj based on child prop and value pair
 var objValMatch = function(obj,prop,value){
 	for (var key in obj) {
 		if (obj.hasOwnProperty(key)) {
@@ -42,18 +43,88 @@ var objValMatch = function(obj,prop,value){
 	}
 }
 
-var updatePos = function(peg,pos){
-	//if the peg new position exceeds the number of peg spots, start back at the first peg zone 
-	if(pos >= Settings.pegZoneNum){
-		peg.x(pegSpots[0].getX());
-		peg.y(pegSpots[0].getY());
-		peg.pos = 0;
-	}else{
-		peg.x(pegSpots[pos].getX());
-		peg.y(pegSpots[pos].getY());
-		//make sure to update peg position
-		peg.pos = pos;
+var getObjByKeyVal = function(obj,prop,val){
+	for (var key in obj) {
+		if (obj.hasOwnProperty(key)) {
+			if(obj[key][prop] === val){
+				return obj[key];
+			}
+			else{
+				return false;
+			}
+		}
 	}
+}
+
+var initNextTurn = function(){
+	//change player turn based on player color order in Settings obj
+	var turn = Session.turn;
+	if(turn === objValMatch(Settings.pegs,"order",4)){
+		Session.turn = objValMatch(Settings.pegs,"order",1);
+	}else{
+		newTurn = Settings.pegs[turn].order+1;
+		Session.turn = objValMatch(Settings.pegs,"order",newTurn);
+	}
+
+	//need to change color of turn text
+	diceTurn.setText(Session.turn);
+	diceTurn.setFill(Session.turn);
+
+  stage.draw();
+}
+
+var checkCollision = function(peg,newPos){
+	var pegCol = getObjByKeyVal(pegs.children,"pos",newPos);
+	console.log(pegCol);
+	console.log("peg: "+newPos);
+	console.log("collision: "+pegCol.pos);
+	if(newPos === pegCol.pos){
+		return pegCol;
+	}else{
+		return false;
+	}
+}
+
+var movePos = function(peg,newPos){
+	//if the peg new position exceeds the number of peg spots, start back at the first peg zone
+	if(newPos >= Settings.pegZoneNum){
+		//account for additional steps if the new position is greater than the number of peg zones
+		var add = newPos - Settings.pegZoneNum;
+		peg.x(pegSpots[0+add].getX());
+		peg.y(pegSpots[0+add].getY());
+		peg.newPos = 0+add;
+	}else{
+		peg.x(pegSpots[newPos].getX());
+		peg.y(pegSpots[newPos].getY());
+		//make sure to update peg position
+		peg.pos = newPos;
+	}
+}
+
+var updatePos = function(peg,newPos){
+	// test for collisions with other pegs
+	var pegCol = checkCollision(peg,newPos);
+
+	console.log(pegCol);
+	if(pegCol && peg.color === pegCol.color){
+		//collision with same color peg
+		console.log("Collision with another one of your pegs. Go again.");
+		
+	}else if(pegCol && peg.color !== pegCol.color){
+		// collision with another colored peg, so bump peg back to zone
+		console.log("You bumped a "+pegCol.color+" peg");
+		pegCol.x(pegCol.orgX);
+		pegCol.y(pegCol.orgY);
+		//change position to 0 since returning peg to zone
+		pegCol.pos = 0;
+		movePos(peg,newPos);
+		initNextTurn();
+	}else{
+		// no collisions, so move peg normally and start next turn
+		movePos(peg,newPos);
+		initNextTurn();
+	}
+
 }
 
 // #### Game Session Info
@@ -61,6 +132,8 @@ var updatePos = function(peg,pos){
 Session = {
 	turn : objValMatch(Settings.pegs,"order",1),
 }
+
+// #### Canvas Stage
 
 var stage = new Kinetic.Stage({
 	container: 'board',
@@ -134,7 +207,7 @@ var board = new Kinetic.Layer({
     height:stage.height()
 });
 
-//create array for pegSpots
+//create array for pegSpots. NOTE: maybe may pegSpots array temp and just reference kineticjs object
 var pegSpots = [],
 	pegNum = Settings.pegZoneNum;
 
@@ -161,11 +234,11 @@ var pegs = new Kinetic.Layer();
 var zones = new Kinetic.Layer();
 
 var createPegs = function(color,x,y){
-	var pegArray = [];
-	pegArray[color] = new Kinetic.Group();
-	var peg = pegArray[color];
 
-	pegArray[color][i] = new Kinetic.Circle({
+	//temp array to hold pegs and create dynamic variable pegArray[i]
+	var pegArray = [];
+
+	pegArray[i] = new Kinetic.Circle({
 		x: x,
 		y: y,
 		radius: 25,
@@ -175,17 +248,16 @@ var createPegs = function(color,x,y){
 	});
 
 	// set position to 0. Once a peg is in play, it's position will be set
-	peg[i].pos = 0;
+	pegArray[i].pos = 0;
 	// add color to peg obj
-	peg[i].color = color;
+	pegArray[i].color = color;
 	// Status that says whether the peg is on the board or off (in it's zone)
-	peg[i].status = "off";
+	pegArray[i].status = "off";
 	// save orginal coordinates
-	peg[i].orgX = peg[i].x();
-	peg[i].orgY = peg[i].y();
+	pegArray[i].orgX = pegArray[i].x();
+	pegArray[i].orgY = pegArray[i].y();
 
-	peg.add(peg[i]);
-	pegs.add(peg);
+	pegs.add(pegArray[i]);
 }
 
 var createZones = function(color){
@@ -252,18 +324,13 @@ diceCircle.on('click', function() {
 
 //move peg to number of the dice roll when clicked
 pegs.on('click', function(e){
-	console.log(e.target);
 
 	//check to see if a 6 was rolled, if the peg clicked on is off the board and if it's the correct color's turn
 	if(diceText.text() === "6" && e.target.status === "off" && e.target.color === Session.turn){
 
-		console.log("text: "+diceText.text());
-		console.log("Status: "+e.target.status);
-		console.log("color: "+e.target.color);
-
 		var newPos = Settings.pegs[Session.turn].start;
 		updatePos(e.target,newPos);
-		// since a six was rolle, piece can be in play and status must be changed to on
+		// since a six was rolled, piece can be in play and status must be changed to on
 		e.target.status = "on";
 	}
 
@@ -273,22 +340,15 @@ pegs.on('click', function(e){
 		updatePos(e.target,newPos);
 	}
 
-	//change player turn based on player color order in Settings obj
-	var turn = Session.turn;
-	if(turn === objValMatch(Settings.pegs,"order",4)){
-		Session.turn = objValMatch(Settings.pegs,"order",1);
-	}else{
-		newTurn = Settings.pegs[turn].order+1;
-		Session.turn = objValMatch(Settings.pegs,"order",newTurn);
-	}
-
-	//need to change color of turn text
-	diceTurn.setText(Session.turn);
-	diceTurn.setFill(Session.turn);
-
 	//redraw entire stage to clear board of old peg positions
 	stage.draw();
 });
 
+//Debugging 
 
+var redPeg = pegs.children[0];
+	redPeg2 = pegs.children[2],
+	bluePeg = pegs.children[4],
+	greenPeg = pegs.children[8],
+	yellowPeg = pegs.children[12];
 
