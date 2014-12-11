@@ -127,8 +127,9 @@ var updatePos = function(peg,newPos){
 }
 
 var checkPegsOn = function(color){
-  var pegObj = getObjByKeyVal(pegs.children,"color",color);
-  var pegsOn = getObjByKeyVal(pegs.children,"pos","0");
+  var pegObj = getObjByKeyVal(pegs.children,"color",color),
+      pegsOn = getObjByKeyVal(pegObj,"pos",0);
+  return pegsOn;
 }
 
 // #### Game Session Info
@@ -325,10 +326,11 @@ diceCircle.on('click', function() {
 	console.log(diceText.text());
 
   // if all player's pegs are in their zone and a 6 wasn't rolled, move to next turn
-  //var currentTurnPegs = getObjByKeyVal(pegs.children,"color","red");
-  /*if(diceText.text() !== 6 && currentTurnPegs.length === 4){
+  var currentPegs = checkPegsOn("red");
+  if(diceText.text() !== 6 && currentPegs.length === 4){
+    console.log("No moves");
     initNextTurn();
-  }*/
+  }
 	
 });
 
