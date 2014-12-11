@@ -44,16 +44,17 @@ var objValMatch = function(obj,prop,value){
 }
 
 var getObjByKeyVal = function(obj,prop,val){
+  // array to hold matches
+  var matches = [];
 	for (var key in obj) {
 		if (obj.hasOwnProperty(key)) {
 			if(obj[key][prop] === val){
-				return obj[key];
-			}
-			else{
-				return false;
+        // push match to array
+				matches.push(obj[key]);
 			}
 		}
 	}
+  return matches;
 }
 
 var initNextTurn = function(){
@@ -74,13 +75,13 @@ var initNextTurn = function(){
 }
 
 var checkCollision = function(peg,newPos){
-	var pegCol = getObjByKeyVal(pegs.children,"pos",newPos);
-	console.log(pegCol);
-	console.log("peg: "+newPos);
-	console.log("collision: "+pegCol.pos);
-	if(newPos === pegCol.pos){
-		return pegCol;
+  var pegCol = getObjByKeyVal(pegs.children,"pos",newPos);
+
+  // use first object in returned array. There should only be one collision since only one peg can occupy a spot at a time
+	if(pegCol.length && newPos === pegCol[0].pos){
+		return pegCol[0];
 	}else{
+    // no collision so return false
 		return false;
 	}
 }
@@ -104,8 +105,6 @@ var movePos = function(peg,newPos){
 var updatePos = function(peg,newPos){
 	// test for collisions with other pegs
 	var pegCol = checkCollision(peg,newPos);
-
-	console.log(pegCol);
 	if(pegCol && peg.color === pegCol.color){
 		//collision with same color peg
 		console.log("Collision with another one of your pegs. Go again.");
@@ -125,6 +124,11 @@ var updatePos = function(peg,newPos){
 		initNextTurn();
 	}
 
+}
+
+var checkPegsOn = function(color){
+  var pegObj = getObjByKeyVal(pegs.children,"color",color);
+  var pegsOn = getObjByKeyVal(pegs.children,"pos","0");
 }
 
 // #### Game Session Info
@@ -319,6 +323,12 @@ diceCircle.on('click', function() {
 
 	console.log("Click");
 	console.log(diceText.text());
+
+  // if all player's pegs are in their zone and a 6 wasn't rolled, move to next turn
+  //var currentTurnPegs = getObjByKeyVal(pegs.children,"color","red");
+  /*if(diceText.text() !== 6 && currentTurnPegs.length === 4){
+    initNextTurn();
+  }*/
 	
 });
 
@@ -326,14 +336,17 @@ diceCircle.on('click', function() {
 pegs.on('click', function(e){
 
 	//check to see if a 6 was rolled, if the peg clicked on is off the board and if it's the correct color's turn
-	if(diceText.text() === "6" && e.target.status === "off" && e.target.color === Session.turn){
-
-		var newPos = Settings.pegs[Session.turn].start;
-		updatePos(e.target,newPos);
-		// since a six was rolled, piece can be in play and status must be changed to on
-		e.target.status = "on";
+	if(e.target.status === "off" && e.target.color === Session.turn){
+    // if a 6 was rolled, move a peg on to the board
+    if(diceText.text() === "6"){
+      var newPos = Settings.pegs[Session.turn].start;
+      updatePos(e.target,newPos);
+      // since a six was rolled, piece can be in play and status must be changed to on
+      e.target.status = "on";
+    }else{
+      console.log("Can't move on to board without rolling a six");
+    }
 	}
-
 	//if the piece is in play and it's the color of the turn
 	else if(e.target.status === "on" && e.target.color === Session.turn){
 		var newPos = parseInt(diceText.text()) + e.target.pos;
