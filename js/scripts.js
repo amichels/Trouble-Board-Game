@@ -93,7 +93,7 @@ var movePos = function(peg,newPos){
 		var add = newPos - Settings.pegZoneNum;
 		peg.x(pegSpots[0+add].getX());
 		peg.y(pegSpots[0+add].getY());
-		peg.newPos = 0+add;
+		peg.pos = 0+add;
 	}else{
 		peg.x(pegSpots[newPos].getX());
 		peg.y(pegSpots[newPos].getY());
@@ -126,10 +126,10 @@ var updatePos = function(peg,newPos){
 
 }
 
-var checkPegsOn = function(color){
+var checkPegsOff = function(color){
   var pegObj = getObjByKeyVal(pegs.children,"color",color),
-      pegsOn = getObjByKeyVal(pegObj,"pos",0);
-  return pegsOn;
+      pegsOff = getObjByKeyVal(pegObj,"pos",0);
+  return pegsOff;
 }
 
 // #### Game Session Info
@@ -323,19 +323,19 @@ diceCircle.on('click', function() {
 	dice.draw();
 
 	console.log("Click");
-	console.log(diceText.text());
-
-  // if all player's pegs are in their zone and a 6 wasn't rolled, move to next turn
-  var currentPegs = checkPegsOn("red");
-  if(diceText.text() !== 6 && currentPegs.length === 4){
-    console.log("No moves");
-    initNextTurn();
-  }
+	console.log(Session.turn);
 	
 });
 
 //move peg to number of the dice roll when clicked
 pegs.on('click', function(e){
+
+  // if all player's pegs are in their zone and a 6 wasn't rolled, move to next turn
+  var currentPegs = checkPegsOff(Session.turn);
+  if(diceText.text() !== "6" && currentPegs.length === 4){
+    console.log("No moves");
+    initNextTurn();
+  }
 
 	//check to see if a 6 was rolled, if the peg clicked on is off the board and if it's the correct color's turn
 	if(e.target.status === "off" && e.target.color === Session.turn){
@@ -359,7 +359,7 @@ pegs.on('click', function(e){
 	stage.draw();
 });
 
-//Debugging 
+//Debugging temp code
 
 var redPeg = pegs.children[0];
 	redPeg2 = pegs.children[2],
