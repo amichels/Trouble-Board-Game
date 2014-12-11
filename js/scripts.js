@@ -214,7 +214,7 @@ var board = new Kinetic.Layer({
 
 //create array for pegSpots. NOTE: maybe may pegSpots array temp and just reference kineticjs object
 var pegSpots = [],
-	pegNum = Settings.pegZoneNum;
+    pegNum = Settings.pegZoneNum;
 
 for (i = 0; i < pegNum; i++) {
 	pegSpots[i] = new Kinetic.Circle({
@@ -297,6 +297,23 @@ var createZones = function(color){
 	}
 }
 
+var createLane = function(color){
+  var pegLane = []
+  var lanes = new Kinetic.Layer();
+  var lane = new Kinetic.Circle({
+    x: ,
+    y: y,
+    radius: 25,
+    fill: color,
+    stroke: 'black',
+    strokeWidth: 1
+  });
+
+  lanes.add(lane);
+  stage.add(lanes);
+
+}
+
 var gameInit = function(){
 	var obj = Settings.pegs;
 	for (var key in obj) {
@@ -362,8 +379,8 @@ pegs.on('click', function(e){
 //Debugging temp code
 
 var redPeg = pegs.children[0];
-	redPeg2 = pegs.children[2],
-	bluePeg = pegs.children[4],
-	greenPeg = pegs.children[8],
-	yellowPeg = pegs.children[12];
+  	redPeg2 = pegs.children[2],
+  	bluePeg = pegs.children[4],
+  	greenPeg = pegs.children[8],
+  	yellowPeg = pegs.children[12];
 
