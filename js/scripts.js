@@ -234,6 +234,45 @@ for (i = 0; i < pegNum; i++) {
 stage.add(board);
 
 
+var createLane = function(color){
+
+  var lanes = new Kinetic.Layer();
+
+  var pegLanes = [],
+      index = Settings.pegs[color].start+1;
+      //one should only be returned because an index is unique so take first.
+      pegSpot = getObjByKeyVal(pegSpots,"index",index)[0];
+
+  for (i = 0; i < pegNum; i++) {
+    if(i === index){
+      for(r = 0; r < 4; r++){
+        
+        pegLanes[r] = new Kinetic.Circle({
+          x: (diceCircle.getX() + ((stage.width()/3) - r * 70 ) * Math.cos(2 * Math.PI * i / pegNum))+stage.width()/2,
+          y: (diceCircle.getY() + ((stage.height()/3) - r * 70 ) * Math.sin(2 * Math.PI * i / pegNum))+stage.height()/2,
+          radius: 25,
+          fill: color,
+          opacity: .5,
+          stroke: 'black',
+          strokeWidth: 1
+        });
+        //need to make peg color
+        pegLanes[r].color = color;
+        //add pegSpots to board layer
+        lanes.add(pegLanes[r]);
+      }
+    }
+    // no reason to continue loop if end has been reached
+    if (i === index){
+      break;
+    }
+  }
+  stage.add(lanes);
+  lanes.draw();
+
+}
+
+
 // #### Pegs &
 var pegs = new Kinetic.Layer();
 var zones = new Kinetic.Layer();
@@ -257,7 +296,9 @@ var createPegs = function(color,x,y){
 	// add color to peg obj
 	pegArray[i].color = color;
 	// Status that says whether the peg is on the board or off (in it's zone)
-	pegArray[i].status = "off";
+	pegArray[i].onBoard = false;
+  // Marks if the peg is in the winning lane
+  pegArray[i].inLane = false;
 	// save orginal coordinates
 	pegArray[i].orgX = pegArray[i].x();
 	pegArray[i].orgY = pegArray[i].y();
@@ -295,23 +336,8 @@ var createZones = function(color){
 			
 		}
 	}
-}
-
-var createLane = function(color){
-  var pegLane = []
-  var lanes = new Kinetic.Layer();
-  var lane = new Kinetic.Circle({
-    x: ,
-    y: y,
-    radius: 25,
-    fill: color,
-    stroke: 'black',
-    strokeWidth: 1
-  });
-
-  lanes.add(lane);
-  stage.add(lanes);
-
+  // create winner lanes
+  createLane(color);
 }
 
 var gameInit = function(){
@@ -355,19 +381,19 @@ pegs.on('click', function(e){
   }
 
 	//check to see if a 6 was rolled, if the peg clicked on is off the board and if it's the correct color's turn
-	if(e.target.status === "off" && e.target.color === Session.turn){
+	if(!e.target.onBoard && e.target.color === Session.turn){
     // if a 6 was rolled, move a peg on to the board
     if(diceText.text() === "6"){
-      var newPos = Settings.pegs[Session.turn].start;
+      var newPos = Settings.pegs[Session.turn].start+1;
       updatePos(e.target,newPos);
-      // since a six was rolled, piece can be in play and status must be changed to on
-      e.target.status = "on";
+      // since a six was rolled, piece can be in play and onBoard must be changed to true
+      e.target.onBoard = true;
     }else{
       console.log("Can't move on to board without rolling a six");
     }
 	}
 	//if the piece is in play and it's the color of the turn
-	else if(e.target.status === "on" && e.target.color === Session.turn){
+	else if(e.target.onBoard && e.target.color === Session.turn){
 		var newPos = parseInt(diceText.text()) + e.target.pos;
 		updatePos(e.target,newPos);
 	}
