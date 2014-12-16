@@ -102,13 +102,13 @@ var movePos = function(peg,newPos){
 	}
 }
 
-var updatePos = function(peg,newPos){
-	// test for collisions with other pegs
-	var pegCol = checkCollision(peg,newPos);
+var updatePos = function(peg,newPos,roll){
+	var pegCol = checkCollision(peg,newPos),
+      start = Settings.pegs[peg.color].start;
+  // test for collisions with other pegs
 	if(pegCol && peg.color === pegCol.color){
 		//collision with same color peg
 		console.log("Collision with another one of your pegs. Go again.");
-		
 	}else if(pegCol && peg.color !== pegCol.color){
 		// collision with another colored peg, so bump peg back to zone
 		console.log("You bumped a "+pegCol.color+" peg");
@@ -118,12 +118,21 @@ var updatePos = function(peg,newPos){
 		pegCol.pos = 0;
 		movePos(peg,newPos);
 		initNextTurn();
-	}else{
+  }else if(peg.cycle){
+    // check to see if the peg made a cycle. If so it's ready for the winner lane
+    console.log("move to lane "+ roll);
+  }else{
+
+    if(newPos > (start - 6) && newPos < start){
+      // has the peg made a complete cycle/it's back at starting postion. If so, mark cycle as true
+      // if cycle is true, peg is ready to enter the winner lane if it doesn't get bumped first
+      console.log("Peg made a cycle");
+      peg.cycle = true;
+    }
 		// no collisions, so move peg normally and start next turn
 		movePos(peg,newPos);
 		initNextTurn();
 	}
-
 }
 
 var checkPegsOff = function(color){
@@ -152,9 +161,9 @@ var stage = new Kinetic.Stage({
 // ##### DICE
 var dice = new Kinetic.Layer({
 	x: stage.width()/2,
-    y: stage.height()/2,
-    width:80,
-    height:80
+  y: stage.height()/2,
+  width:80,
+  height:80
 });
 
 var diceCircle = new Kinetic.Circle({
@@ -166,34 +175,34 @@ var diceCircle = new Kinetic.Circle({
 
 var diceText = new Kinetic.Text({
 	x : diceCircle.getX(),
-    y : diceCircle.getY(),
-  	text: 'Go',
-  	fontSize: 30,
-  	width:dice.width(),
-  	fontFamily: 'Calibri',
-  	fill: 'black',
-  	align:'center'
+  y : diceCircle.getY(),
+	text: 'Go',
+	fontSize: 30,
+	width:dice.width(),
+	fontFamily: 'Calibri',
+	fill: 'black',
+	align:'center'
 });
 
 var diceTurn = new Kinetic.Text({
 	x : 0,
-    y : diceCircle.getY()+150,
-  	text: Session.turn,
-  	fontSize: 30,
-  	fontFamily: 'Calibri',
-  	fill: Session.turn,
-  	align:'center',
-  	width:dice.width()
+  y : diceCircle.getY()+150,
+	text: Session.turn,
+	fontSize: 30,
+	fontFamily: 'Calibri',
+	fill: Session.turn,
+	align:'center',
+	width:dice.width()
 });
 
 //center dice text within dice circle
 diceText.setOffset({
-    x : diceText.width()/2,
-    y : diceText.height()/2
+  x : diceText.width()/2,
+  y : diceText.height()/2
 });
 diceTurn.setOffset({
-    x : diceTurn.width()/2,
-    y : diceTurn.height()/2
+  x : diceTurn.width()/2,
+  y : diceTurn.height()/2
 });
 
 
@@ -233,10 +242,11 @@ for (i = 0; i < pegNum; i++) {
 // add the board to the stage
 stage.add(board);
 
+// ### Lanes
+
+var lanes = new Kinetic.Layer();
 
 var createLane = function(color){
-
-  var lanes = new Kinetic.Layer();
 
   var pegLanes = [],
       index = Settings.pegs[color].start+1;
@@ -273,7 +283,7 @@ var createLane = function(color){
 }
 
 
-// #### Pegs &
+// #### Pegs & Zones
 var pegs = new Kinetic.Layer();
 var zones = new Kinetic.Layer();
 
@@ -297,6 +307,8 @@ var createPegs = function(color,x,y){
 	pegArray[i].color = color;
 	// Status that says whether the peg is on the board or off (in it's zone)
 	pegArray[i].onBoard = false;
+  // Marks if the peg made a complete cycle and ready to enter winner lane
+  pegArray[i].cycle = false;
   // Marks if the peg is in the winning lane
   pegArray[i].inLane = false;
 	// save orginal coordinates
@@ -373,6 +385,8 @@ diceCircle.on('click', function() {
 //move peg to number of the dice roll when clicked
 pegs.on('click', function(e){
 
+  var roll = parseInt(diceText.text());
+
   // if all player's pegs are in their zone and a 6 wasn't rolled, move to next turn
   var currentPegs = checkPegsOff(Session.turn);
   if(diceText.text() !== "6" && currentPegs.length === 4){
@@ -385,7 +399,7 @@ pegs.on('click', function(e){
     // if a 6 was rolled, move a peg on to the board
     if(diceText.text() === "6"){
       var newPos = Settings.pegs[Session.turn].start+1;
-      updatePos(e.target,newPos);
+      updatePos(e.target,newPos,roll);
       // since a six was rolled, piece can be in play and onBoard must be changed to true
       e.target.onBoard = true;
     }else{
@@ -394,8 +408,8 @@ pegs.on('click', function(e){
 	}
 	//if the piece is in play and it's the color of the turn
 	else if(e.target.onBoard && e.target.color === Session.turn){
-		var newPos = parseInt(diceText.text()) + e.target.pos;
-		updatePos(e.target,newPos);
+    var newPos = roll + e.target.pos;
+    updatePos(e.target,newPos,roll);
 	}
 
 	//redraw entire stage to clear board of old peg positions
